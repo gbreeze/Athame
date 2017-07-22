@@ -41,7 +41,7 @@ namespace Athame.Utils
         public static string GetBasicPath(this Track track, string pathFormat, StringObjectFormatter formatter)
         {
             return formatter.FormatInstance(pathFormat, track,
-                o => PathHelpers.CleanFilename(o.ToString()));
+                o => o != null ? PathHelpers.CleanFilename(o.ToString()) : "");
         }
     }
 }
