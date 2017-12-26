@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Athame.Logging;
 using Athame.PluginAPI.Downloader;
 using Athame.PluginAPI.Service;
+using Athame.Settings;
 using Athame.Utils;
 
 namespace Athame.DownloadAndTag
@@ -27,13 +25,15 @@ namespace Athame.DownloadAndTag
             this.useTempFile = useTempFile;
         }
 
-        public EnqueuedCollection Enqueue(MusicService service, IMediaCollection collection, string pathFormat)
+        public EnqueuedCollection Enqueue(MusicService service, IMediaCollection collection, string destination, string pathFormat)
         {
             var item = new EnqueuedCollection
             {
+                Destination = destination,
                 Service = service,
                 PathFormat = pathFormat,
-                MediaCollection = collection
+                MediaCollection = collection,
+                Type = MediaCollectionAsType(collection)
             };
             Add(item);
             return item;
@@ -90,9 +90,17 @@ namespace Athame.DownloadAndTag
         }
         #endregion
 
+        public int TrackCount
+        {
+            get
+            {
+                return this.Sum(collection => collection.MediaCollection.Tracks.Count);
+            }
+        }
+
         private ExceptionSkip skip;
 
-        public async Task StartDownloadAsync()
+        public async Task StartDownloadAsync(SavePlaylistSetting playlistSetting)
         {
             var queueView = new Queue<EnqueuedCollection>(this);
             while (queueView.Count > 0)
@@ -104,7 +112,7 @@ namespace Athame.DownloadAndTag
                     CurrentCollectionIndex = (Count - queueView.Count) - 1,
                     TotalNumberOfCollections = Count
                 });
-                if (await DownloadCollectionAsync(currentItem)) continue;
+                if (await DownloadCollectionAsync(currentItem, playlistSetting)) continue;
                 if (skip == ExceptionSkip.Fail)
                 {
                     return;
@@ -127,21 +135,25 @@ namespace Athame.DownloadAndTag
             Directory.CreateDirectory(parentPath);
         }
 
-        private async Task<bool> DownloadCollectionAsync(EnqueuedCollection collection)
+        private async Task<bool> DownloadCollectionAsync(EnqueuedCollection collection, SavePlaylistSetting savePlaylistSetting)
         {
             var tracksCollectionLength = collection.MediaCollection.Tracks.Count;
             var tracksQueue = new Queue<Track>(collection.MediaCollection.Tracks);
+            var trackFiles = new List<TrackFile>(collection.MediaCollection.Tracks.Count);
+            TrackDownloadEventArgs gEventArgs = null;
             while (tracksQueue.Count > 0)
             {
-                var currentItem = tracksQueue.Dequeue();
-                var eventArgs = new TrackDownloadEventArgs
+                var eventArgs = gEventArgs = new TrackDownloadEventArgs
                 {
                     CurrentItemIndex = (tracksCollectionLength - tracksQueue.Count) - 1,
                     PercentCompleted = 0M,
                     State = DownloadState.PreProcess,
                     TotalItems = tracksCollectionLength,
+                    
                     TrackFile = null
                 };
+                var currentItem = tracksQueue.Dequeue();
+
                 OnTrackDequeued(eventArgs);
 
                 try
@@ -170,6 +182,7 @@ namespace Athame.DownloadAndTag
                             }
                         }
                     }
+                    // Get the TrackFile
                     eventArgs.TrackFile = await collection.Service.GetDownloadableTrackAsync(currentItem);
                     var downloader = collection.Service.GetDownloader(eventArgs.TrackFile);
                     downloader.Progress += (sender, args) =>
@@ -182,12 +195,17 @@ namespace Athame.DownloadAndTag
                         eventArgs.State = DownloadState.PostProcess;
                         OnTrackDownloadProgress(eventArgs);
                     };
-                    var path = eventArgs.TrackFile.GetPath(collection.PathFormat);
+
+                    // Generate the path
+                    var path = collection.GetPath(eventArgs.TrackFile);
                     var tempPath = path;
                     if (useTempFile) tempPath += "-temp";
                     EnsureParentDirectories(tempPath);
                     eventArgs.State = DownloadState.Downloading;
+
+                    // Begin download
                     await downloader.DownloadAsyncTask(eventArgs.TrackFile, tempPath);
+                    trackFiles.Add(eventArgs.TrackFile);
 
                     // Attempt to dispose the downloader, since the most probable case will be that it will
                     // implement IDisposable if it uses sockets
@@ -197,8 +215,12 @@ namespace Athame.DownloadAndTag
                     // Write the tag
                     eventArgs.State = DownloadState.WritingTags;
                     OnTrackDownloadProgress(eventArgs);
-                    TrackTagger.Write(collection.Service.Info.Name, currentItem, eventArgs.TrackFile, 
-                        Program.DefaultSettings.Settings.AlbumArtworkSaveFormat, tempPath);
+                    var setting = Program.DefaultSettings.Settings.AlbumArtworkSaveFormat;
+                    if (Program.DefaultSettings.Settings.IgnoreSaveArtworkWithPlaylist && collection.Type == MediaType.Playlist)
+                    {
+                        setting = AlbumArtworkSaveFormat.DontSave;
+                    }
+                    TrackTagger.Write(collection.Service.Info.Name, currentItem, eventArgs.TrackFile, setting, tempPath);
 
                     // Rename to proper path
                     if (useTempFile)
@@ -234,8 +256,67 @@ namespace Athame.DownloadAndTag
                 // Raise the completed event even if an error occurred
                 OnTrackDownloadCompleted(eventArgs);
 
+                
+            }
+
+            // Write playlist if possible
+            try
+            {
+                var writer = new PlaylistWriter(collection, trackFiles);
+                switch (savePlaylistSetting)
+                {
+                    case SavePlaylistSetting.DontSave:
+                        break;
+                    case SavePlaylistSetting.M3U:
+                        writer.WriteM3U8();
+                        break;
+                    case SavePlaylistSetting.PLS:
+                        writer.WritePLS();
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(savePlaylistSetting), savePlaylistSetting, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                var exEventArgs = new ExceptionEventArgs
+                {
+                    CurrentState = gEventArgs,
+                    Exception = ex
+                };
+                OnException(exEventArgs);
+                switch (exEventArgs.SkipTo)
+                {
+                    case ExceptionSkip.Item:
+                        break;
+
+                    case ExceptionSkip.Collection:
+                    case ExceptionSkip.Fail:
+                        skip = exEventArgs.SkipTo;
+                        return false;
+
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
             return true;
+        }
+
+        private static MediaType MediaCollectionAsType(IMediaCollection collection)
+        {
+            if (collection is Album)
+            {
+                return MediaType.Album;
+            }
+            if (collection is Playlist)
+            {
+                return MediaType.Playlist;
+            }
+            if (collection is SingleTrackCollection)
+            {
+                return MediaType.Track;
+            }
+            return MediaType.Unknown;
         }
     }
 }

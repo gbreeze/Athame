@@ -5,7 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Media;
-using System.Text;
+using System.Resources;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -40,7 +40,7 @@ namespace Athame.UI
 
         // Constants
         private new const string Tag = nameof(MainForm);
-        private const string GroupHeaderFormat = "{0}: {1} ({2})";
+        private const string GroupHeaderFormat = "{2} {0}: {1} ({3} total, {4} available)";
         private const int RetryCount = 3;
 
         // Read-only instance vars
@@ -53,9 +53,9 @@ namespace Athame.UI
         private ListViewItem mCurrentlySelectedQueueItem;
         private ListViewItem currentlyDownloadingItem;
         private CollectionDownloadEventArgs currentCollection;
-        private bool isListViewDirty = false;
-        private int numberOfRetries = 0;
-        
+        private bool isListViewDirty;
+        private bool isWorking;
+
 
         public MainForm()
         {
@@ -80,7 +80,16 @@ namespace Athame.UI
 
         private void DefaultPluginManagerOnLoadException(object sender, PluginLoadExceptionEventArgs pluginLoadExceptionEventArgs)
         {
-            pluginLoadExceptions.Add(pluginLoadExceptionEventArgs.Exception);
+            if (pluginLoadExceptionEventArgs.Exception.GetType() == typeof(PluginIncompatibleException))
+            {
+                TaskDialogHelper.ShowMessage("Incompatible plugin",
+                    $"The plugin \"{pluginLoadExceptionEventArgs.PluginName}\" is incompatible with this version of Athame.",
+                    icon: TaskDialogStandardIcon.Error, buttons: TaskDialogStandardButtons.Ok, owner: Handle);
+            }
+            else
+            {
+                pluginLoadExceptions.Add(pluginLoadExceptionEventArgs.Exception);
+            }
             pluginLoadExceptionEventArgs.Continue = true;
         }
 
@@ -91,7 +100,7 @@ namespace Athame.UI
         /// <returns>An integer that is not greater than 100.</returns>
         private int PercentToInt(decimal percent)
         {
-            var rounded = (int) (Decimal.Round(percent, 2, MidpointRounding.ToEven) * (decimal) 100);
+            var rounded = (int)(Decimal.Round(percent, 2, MidpointRounding.ToEven) * (decimal)100);
             return rounded > 100 ? 100 : rounded;
         }
 
@@ -99,14 +108,14 @@ namespace Athame.UI
         {
             collectionProgressBar.Value = PercentToInt(e.TotalProgress);
             totalProgressBar.Value +=
-                PercentToInt(((decimal) (e.TotalProgress + currentCollection.CurrentCollectionIndex) /
-                              currentCollection.TotalNumberOfCollections)) - totalProgressBar.Value;
+                PercentToInt(((decimal)(e.TotalProgress + currentCollection.CurrentCollectionIndex) /
+                              currentCollection.TotalNumberOfCollections)) - totalProgressBar.Value;           
             SetGlobalProgress(totalProgressBar.Value);
             switch (e.State)
             {
                 case DownloadState.PreProcess:
                     StartAnimation(currentlyDownloadingItem);
-                    currentlyDownloadingItem.Text = "Downloading collection...";
+                    currentlyDownloadingItem.Text = "Downloading...";
                     collectionStatusLabel.Text = "Pre-processing...";
                     break;
                 case DownloadState.DownloadingAlbumArtwork:
@@ -136,16 +145,15 @@ namespace Athame.UI
 
         private void MediaDownloadQueue_TrackDequeued(object sender, TrackDownloadEventArgs e)
         {
-            numberOfRetries = 0;
             // this'll bite me in the ass someday
-            currentlyDownloadingItem = queueListView.Groups[currentCollection.CurrentCollectionIndex].Items[e.CurrentItemIndex * 2];
-            queueListView.EnsureVisible(currentlyDownloadingItem.Index);
+            var itemIndex = e.CurrentItemIndex + 1;
+            currentlyDownloadingItem = queueListView.Groups[currentCollection.CurrentCollectionIndex].Items[itemIndex * 2];
         }
 
         private void MediaDownloadQueue_CollectionDequeued(object sender, CollectionDownloadEventArgs e)
         {
             currentCollection = e;
-            totalStatusLabel.Text = $"{e.CurrentCollectionIndex + 1}/{e.TotalNumberOfCollections}: {MediaCollectionAsType(e.Collection.MediaCollection)} \"{e.Collection.MediaCollection.Title}\"";
+            totalStatusLabel.Text = $"{e.CurrentCollectionIndex + 1}/{e.TotalNumberOfCollections}: {e.Collection.Type} \"{e.Collection.MediaCollection.Title}\"";
         }
 
         private void MediaDownloadQueue_Exception(object sender, ExceptionEventArgs e)
@@ -162,7 +170,7 @@ namespace Athame.UI
             currentlyDownloadingItem.Text = "Error occurred while downloading";
             tag.Exception = e.Exception;
             e.SkipTo = ExceptionSkip.Item;
-            
+
         }
 
         private string BuildFlags(IEnumerable<Metadata> metadata)
@@ -189,12 +197,19 @@ namespace Athame.UI
         }
 
         #region Download queue manipulation
-        private void AddToQueue(MusicService service, IMediaCollection item, string pathFormat)
+
+        private string MakeGroupHeader(EnqueuedCollection collection)
         {
-            var enqueuedItem = mediaDownloadQueue.Enqueue(service, item, pathFormat);
-            var mediaType = MediaCollectionAsType(item);
-            var header = String.Format(GroupHeaderFormat, mediaType, item.Title, service.Info.Name);
-            var group = new ListViewGroup(header);
+            return String.Format(GroupHeaderFormat, collection.Type, 
+                collection.MediaCollection.Title, collection.Service.Info.Name, collection.MediaCollection.Tracks.Count, 
+                collection.MediaCollection.GetAvailableTracksCount());
+        }
+
+        private void AddToQueue(MusicService service, IMediaCollection item, string destination, string pathFormat)
+        {
+            var enqueuedItem = mediaDownloadQueue.Enqueue(service, item, destination, pathFormat);
+            var header = MakeGroupHeader(enqueuedItem);
+            var group = new ListViewGroup(header, HorizontalAlignment.Center);
             var groupIndex = queueListView.Groups.Add(group);
             for (var i = 0; i < item.Tracks.Count; i++)
             {
@@ -228,7 +243,7 @@ namespace Athame.UI
                 lvItem.SubItems.Add(t.Artist.Name);
                 lvItem.SubItems.Add(t.Album.Title);
                 lvItem.SubItems.Add(BuildFlags(t.CustomMetadata));
-                lvItem.SubItems.Add(t.GetBasicPath(enqueuedItem.PathFormat));
+                lvItem.SubItems.Add(Path.Combine(destination, t.GetBasicPath(enqueuedItem.PathFormat, item)));
                 group.Items.Add(lvItem);
                 queueListView.Items.Add(lvItem);
             }
@@ -247,7 +262,10 @@ namespace Athame.UI
                 {
                     mediaDownloadQueue.Remove(item.Collection);
                 }
+                var group = queueListView.Groups[item.GroupIndex];
+                group.Header = MakeGroupHeader(item.Collection);
             }
+            
             mCurrentlySelectedQueueItem = null;
         }
 
@@ -269,43 +287,26 @@ namespace Athame.UI
         }
         #endregion
 
-        private MediaType MediaCollectionAsType(IMediaCollection collection)
-        {
-            if (collection is Album)
-            {
-                return MediaType.Album;
-            }
-            if (collection is Playlist)
-            {
-                return MediaType.Playlist;
-            }
-            if (collection is SingleTrackCollection)
-            {
-                return MediaType.Track;
-            }
-            return MediaType.Unknown;
-        }
-
         private void LockUi()
         {
+            isWorking = true;
             idTextBox.Enabled = false;
             dlButton.Enabled = false;
             settingsButton.Enabled = false;
             pasteButton.Enabled = false;
             clearButton.Enabled = false;
             startDownloadButton.Enabled = false;
-            queueListView.Enabled = false;
         }
 
         private void UnlockUi()
         {
+            isWorking = false;
             idTextBox.Enabled = true;
-            dlButton.Enabled = true;
+            dlButton.Enabled = !String.IsNullOrWhiteSpace(idTextBox.Text);
             settingsButton.Enabled = true;
             pasteButton.Enabled = true;
             clearButton.Enabled = true;
             startDownloadButton.Enabled = mediaDownloadQueue.Count > 0;
-            queueListView.Enabled = true;
         }
 
         private void SetGlobalProgress(int value)
@@ -349,7 +350,7 @@ namespace Athame.UI
             {
                 th = "Invalid session/subscription expired";
             }
-            CommonTaskDialogs.Exception(ex, th, "You may need to sign into this service again.", this).Show();
+            TaskDialogHelper.ShowExceptionDialog(ex, th, "You may need to sign into this service again.", Handle);
         }
 
         private MediaTypeSavePreference PreferenceForType(MediaType type)
@@ -368,9 +369,9 @@ namespace Athame.UI
                     select screen).Any();
         }
 
-        private void ShowStartupTaskDialog()
+        private void RestoreServices()
         {
-            var td = CommonTaskDialogs.Wait(owner: this);
+            var td = TaskDialogHelper.CreateWaitDialog(null, Handle);
             var openCt = new CancellationTokenSource();
             td.Opened += async (o, args) =>
             {
@@ -389,8 +390,8 @@ namespace Athame.UI
                         if (!result)
                         {
                             Log.Error(Tag, $"Failed to sign into {service.Info.Name}");
-                            CommonTaskDialogs.Message(owner: this, caption: $"Failed to sign in to {service.Info.Name}",
-                                message: null, icon: TaskDialogStandardIcon.Error).Show();
+                            TaskDialogHelper.ShowMessage(owner: Handle, caption: $"Failed to sign in to {service.Info.Name}",
+                                message: null, icon: TaskDialogStandardIcon.Error, buttons: TaskDialogStandardButtons.Ok);
                         }
                     }
                     td.Close();
@@ -403,7 +404,7 @@ namespace Athame.UI
             }
         }
 
-#region Validation for URL
+        #region Validation for URL
         private const string UrlInvalid = "Invalid URL. Check that the URL begins with \"http://\" or \"https://\".";
         private const string UrlNoService = "Can't download this URL.";
         private const string UrlNeedsAuthentication = "You need to sign in to {0} first. " + UrlNeedsAuthenticationLink1;
@@ -464,9 +465,9 @@ namespace Athame.UI
             mService = service;
             return true;
         }
-#endregion
+        #endregion
 
-#region Easter egg
+        #region Easter egg
 
         private readonly string[] messages = { "Woo-hoo!", "We did it!", "Yusssss", "Alright!", "Sweet!", "Nice...." };
         private readonly Random random = new Random();
@@ -481,127 +482,131 @@ namespace Athame.UI
             return messagesList[random.Next(messagesList.Count)];
         }
 
-#endregion
+        #endregion
 
-#region MainForm event handlers and control event handlers
-        
+        private void CleanQueueListView()
+        {
+            collectionStatusLabel.Text = "Ready to begin.";
+            collectionProgressBar.Value = 0;
+            SetGlobalProgress(0);
+            SetGlobalProgressState(ProgressBarState.Normal);
+            totalProgressBar.Value = 0;
+            totalStatusLabel.Text = "Ready";
+            queueListView.Groups.Clear();
+            queueListView.Items.Clear();
+            isListViewDirty = false;
+        }
+
+        #region MainForm event handlers and control event handlers
+
         private void button1_Click(object sender, EventArgs e)
         {
             if (isListViewDirty)
             {
-                collectionStatusLabel.Text = "Ready to begin.";
-                collectionProgressBar.Value = 0;
-                SetGlobalProgress(0);
-                SetGlobalProgressState(ProgressBarState.Normal);
-                totalProgressBar.Value = 0;
-                totalStatusLabel.Text = "Ready";
-                queueListView.Groups.Clear();
-                queueListView.Items.Clear();
-                isListViewDirty = false;
+                CleanQueueListView();
             }
 #if !DEBUG
             try
             {
 #endif
-                // Don't add if the item is already enqueued.
-                var isAlreadyInQueue = mediaDownloadQueue.ItemById(mResult.Id) != null;
-                if (isAlreadyInQueue)
+            // Don't add if the item is already enqueued.
+            var isAlreadyInQueue = mediaDownloadQueue.ItemById(mResult.Id) != null;
+            if (isAlreadyInQueue)
+            {
+                TaskDialogHelper.ShowMessage(owner: Handle, icon: TaskDialogStandardIcon.Error,
+                    caption: "Cannot add to download queue",
+                    message: "This item already exists in the download queue.",
+                    buttons: TaskDialogStandardButtons.Ok);
+            }
+
+            // Ask for the location if required before we begin retrieval
+            var prefType = PreferenceForType(mResult.Type);
+            var saveDir = prefType.SaveDirectory;
+            if (prefType.AskForLocation)
+            {
+                using (var folderSelectionDialog = new FolderBrowserDialog { Description = "Select a destination for this media:" })
                 {
-                    using (
-                        var td = CommonTaskDialogs.Message(owner: this, icon: TaskDialogStandardIcon.Error, 
-                        caption: "Cannot add to download queue", message: "This item already exists in the download queue."))
+                    if (folderSelectionDialog.ShowDialog(this) == DialogResult.OK)
                     {
-                        td.Show();
+                        saveDir = folderSelectionDialog.SelectedPath;
+                    }
+                    else
+                    {
                         return;
                     }
                 }
+            }
 
-                // Ask for the location if required before we begin retrieval
-                var prefType = PreferenceForType(mResult.Type);
-                var saveDir = prefType.SaveDirectory;
-                if (prefType.AskForLocation)
-                {
-                    using (var folderSelectionDialog = new FolderBrowserDialog { Description = "Select a destionation for this media:" })
-                    {
-                        if (folderSelectionDialog.ShowDialog(this) == DialogResult.OK)
-                        {
-                            saveDir = folderSelectionDialog.SelectedPath;
-                        }
-                        else
-                        {
-                            return;
-                        }
-                    }
-                }
+            // Filter out types we can't process right now
+            if (mResult.Type != MediaType.Album && mResult.Type != MediaType.Playlist &&
+                mResult.Type != MediaType.Track)
+            {
+                TaskDialogHelper.ShowMessage(owner: Handle, icon: TaskDialogStandardIcon.Warning, buttons: TaskDialogStandardButtons.Ok,
+                    caption: $"'{mResult.Type}' is not supported yet.",
+                    message: "You may be able to download it in a later release.");
+            }
 
-                // Filter out types we can't process right now
-                if (mResult.Type != MediaType.Album && mResult.Type != MediaType.Playlist &&
-                    mResult.Type != MediaType.Track)
+            // Build wait dialog
+            var retrievalWaitTaskDialog = new TaskDialog
+            {
+                Cancelable = false,
+                Caption = "Athame",
+                InstructionText = $"Getting {mResult.Type.ToString().ToLower()} details...",
+                Text = $"{mService.Info.Name}: {mResult.Id}",
+                StandardButtons = TaskDialogStandardButtons.Cancel,
+                OwnerWindowHandle = Handle,
+                ProgressBar = new TaskDialogProgressBar { State = TaskDialogProgressBarState.Marquee }
+            };
+            // Open handler
+            retrievalWaitTaskDialog.Opened += async (o, args) =>
+            {
+                LockUi();
+                var pathFormat = prefType.GetPlatformSaveFormat();
+                try
                 {
-                    using (var noTypeTd = CommonTaskDialogs.Message(owner: this, icon: TaskDialogStandardIcon.Warning,
-                        caption: $"'{mResult.Type}' is not supported yet.",
-                        message: "You may be able to download it in a later release."))
+                    switch (mResult.Type)
                     {
-                        noTypeTd.Show();
-                        return;
-                    }
-                }
-
-                // Build wait dialog
-                var retrievalWaitTaskDialog = new TaskDialog
-                {
-                    Cancelable = false,
-                    Caption = "Athame",
-                    InstructionText = $"Getting {mResult.Type.ToString().ToLower()} details...",
-                    Text = $"{mService.Info.Name}: {mResult.Id}",
-                    StandardButtons = TaskDialogStandardButtons.Cancel,
-                    OwnerWindowHandle = Handle,
-                    ProgressBar = new TaskDialogProgressBar { State = TaskDialogProgressBarState.Marquee }
-                };
-                // Open handler
-                retrievalWaitTaskDialog.Opened += async (o, args) =>
-                {
-                    LockUi();
-                    var pathFormat = Path.Combine(saveDir, prefType.GetPlatformSaveFormat());
-                    try
-                    {
-                        switch (mResult.Type)
-                        {
-                            case MediaType.Album:
+                        case MediaType.Album:
                                 // Get album and display it in listview
                                 var album = await mService.GetAlbumAsync(mResult.Id, true);
-                                AddToQueue(mService, album, pathFormat);
-                                break;
+                            AddToQueue(mService, album, saveDir, pathFormat);
+                            break;
 
-                            case MediaType.Playlist:
+                        case MediaType.Playlist:
                                 // Get playlist and display it in listview
                                 var playlist = await mService.GetPlaylistAsync(mResult.Id);
-                                AddToQueue(mService, playlist, pathFormat);
-                                break;
+                            if (playlist.Tracks == null)
+                            {
+                                var items = mService.GetPlaylistItems(mResult.Id, 100);
+                                await items.LoadAllPagesAsync();
+                                playlist.Tracks = items.AllItems;
+                            }
+                            AddToQueue(mService, playlist, saveDir, pathFormat);
+                            break;
 
-                            case MediaType.Track:
-                                var track = await mService.GetTrackAsync(mResult.Id);
-                                AddToQueue(mService, track.AsCollection(), pathFormat);
-                                break;
-                        }
+                        case MediaType.Track:
+                            var track = await mService.GetTrackAsync(mResult.Id);
+                            AddToQueue(mService, track.AsCollection(), saveDir, pathFormat);
+                            break;
                     }
-                    catch (ResourceNotFoundException)
-                    {
-                        CommonTaskDialogs.Message(caption: "This media does not exist.",
-    message: "Ensure the provided URL is valid, and try again", owner: this).Show();
-                    }
-                    catch (Exception ex)
-                    {
-                        CommonTaskDialogs.Exception(ex,
-                            "An error occurred while trying to retrieve information for this media.",
-                            "The provided URL may be invalid or unsupported.", this).Show();
-                    }
-                    idTextBox.Clear();
-                    UnlockUi();
-                    retrievalWaitTaskDialog.Close();
-                };
-                // Show dialog
-                retrievalWaitTaskDialog.Show();
+                }
+                catch (ResourceNotFoundException)
+                {
+                    TaskDialogHelper.ShowMessage(caption: "This media does not exist.",
+                        message: "Ensure the provided URL is valid, and try again", owner: Handle, buttons: TaskDialogStandardButtons.Ok, icon: TaskDialogStandardIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    TaskDialogHelper.ShowExceptionDialog(ex,
+                        "An error occurred while trying to retrieve information for this media.",
+                        "The provided URL may be invalid or unsupported.", Handle);
+                }
+                idTextBox.Clear();
+                UnlockUi();
+                retrievalWaitTaskDialog.Close();
+            };
+            // Show dialog
+            retrievalWaitTaskDialog.Show();
 #if !DEBUG
         }
             catch (Exception ex)
@@ -611,7 +616,7 @@ namespace Athame.UI
 #endif
         }
 
-        private void MainForm_Load(object sender, EventArgs e)
+        private void RestoreFormPositionAndSize()
         {
             if (!IsWithinVisibleBounds(Program.DefaultSettings.Settings.MainWindowPreference.Location) ||
                 Program.DefaultSettings.Settings.MainWindowPreference.Location == new Point(0, 0))
@@ -631,6 +636,11 @@ namespace Athame.UI
             Size = savedSize;
         }
 
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            RestoreFormPositionAndSize();
+        }
+
         private void settingsButton_Click(object sender, EventArgs e)
         {
             var absLoc = settingsButton.PointToScreen(new Point(0, settingsButton.Height));
@@ -639,6 +649,17 @@ namespace Athame.UI
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            if (mediaDownloadQueue.Count > 0 && Program.DefaultSettings.Settings.ConfirmExit)
+            {
+                var msgResult = TaskDialogHelper.ShowMessage("Are you sure you want to exit Athame?",
+                    "You have items waiting in the download queue.", TaskDialogStandardButtons.Yes | TaskDialogStandardButtons.No, TaskDialogStandardIcon.Warning, Handle);
+
+                if (msgResult != TaskDialogResult.Yes)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+            }
             Program.DefaultSettings.Save();
         }
 
@@ -670,17 +691,15 @@ namespace Athame.UI
 
         }
 
-        private async void startDownloadButton_Click(object sender, EventArgs e)
+        private async Task StartDownload()
         {
             isListViewDirty = true;
             if (mediaDownloadQueue.Count == 0)
             {
-                using (
-                    var td = CommonTaskDialogs.Message(owner: this, icon: TaskDialogStandardIcon.Error, caption: "No tracks are in the queue.",
-                        message: "You can add tracks by copying the URL to an album, artist, track, or playlist and pasting it into Athame."))
-                {
-                    td.Show();
-                }
+                TaskDialogHelper.ShowMessage(owner: Handle, icon: TaskDialogStandardIcon.Error, buttons: TaskDialogStandardButtons.Ok, 
+                    caption: "No tracks are in the queue.",
+                    message:
+                    "You can add tracks by copying the URL to an album, artist, track, or playlist and pasting it into Athame.");
                 return;
             }
 
@@ -689,7 +708,7 @@ namespace Athame.UI
 
                 LockUi();
                 totalStatusLabel.Text = "Warming up...";
-                await mediaDownloadQueue.StartDownloadAsync();
+                await mediaDownloadQueue.StartDownloadAsync(Program.DefaultSettings.Settings.SavePlaylist);
                 totalStatusLabel.Text = "All downloads completed";
                 collectionStatusLabel.Text = GetCompletionMessage();
                 currentlyDownloadingItem = null;
@@ -707,7 +726,11 @@ namespace Athame.UI
             {
                 UnlockUi();
             }
+        }
 
+        private async void startDownloadButton_Click(object sender, EventArgs e)
+        {
+            await StartDownload();
         }
 
         private void queueListView_MouseClick(object sender, MouseEventArgs e)
@@ -766,28 +789,40 @@ namespace Athame.UI
             Program.DefaultSettings.Settings.MainWindowPreference.Size = Size;
         }
 
-        private void MainForm_Shown(object sender, EventArgs e)
+        private void LoadAndInitPlugins()
         {
             Program.DefaultPluginManager.LoadAll();
-            Program.DefaultSettings.Load();
             Program.DefaultPluginManager.InitAll();
             if (pluginLoadExceptions.Count > 0)
             {
-                CommonTaskDialogs.Message("Plugin load error",
+                TaskDialogHelper.CreateMessageDialog("Plugin load error",
                     "One or more errors occurred while loading plugins. Some plugins may be unavailable. Check the log for more details.",
-                    TaskDialogStandardButtons.Ok, TaskDialogStandardIcon.Warning, this).Show();
+                    TaskDialogStandardButtons.Ok, TaskDialogStandardIcon.Warning, Handle).Show();
                 pluginLoadExceptions.Clear();
             }
-            if (Program.DefaultPluginManager.Plugins.Count == 0)
+            if (!Program.DefaultPluginManager.AreAnyLoaded)
             {
-                CommonTaskDialogs.Message("No plugins installed",
+#if DEBUG
+                // https://youtu.be/Ki5cvEPu_e0?t=161
+                var buttons = TaskDialogStandardButtons.Ok | TaskDialogStandardButtons.No;
+#else
+                var buttons = TaskDialogStandardButtons.Ok;
+#endif
+                if (TaskDialogHelper.CreateMessageDialog("No plugins installed",
                     "No plugins could be found. If you have attempted to install a plugin, it may not be installed properly.",
-                    TaskDialogStandardButtons.Ok, TaskDialogStandardIcon.Error, this).Show();
-                Application.Exit();
-            }
+                    buttons, TaskDialogStandardIcon.Error, Handle).Show() != TaskDialogResult.No)
+                {
+                    Application.Exit();
+                }
 
+            }
+        }
+
+        private void MainForm_Shown(object sender, EventArgs e)
+        {
             LockUi();
-            ShowStartupTaskDialog();
+            LoadAndInitPlugins();
+            RestoreServices();
             UnlockUi();
         }
 
@@ -806,7 +841,7 @@ namespace Athame.UI
 
             }
         }
-#endregion
+        #endregion
 
         private const int ImageListAnimStartIndex = 4;
         private const int ImageListAnimEndIndex = 15;
@@ -835,7 +870,7 @@ namespace Athame.UI
         {
             if (mCurrentlySelectedQueueItem == null) return null;
             var tag = (MediaItemTag)mCurrentlySelectedQueueItem.Tag;
-            var parentDir = Path.GetDirectoryName(tag.Track.GetBasicPath(tag.Collection.PathFormat));
+            var parentDir = Path.GetDirectoryName(Path.Combine(tag.Collection.Destination, tag.Track.GetBasicPath(tag.Collection.PathFormat, tag.Collection.MediaCollection)));
             return Directory.Exists(parentDir) ? parentDir : null;
         }
 
@@ -850,12 +885,9 @@ namespace Athame.UI
         {
             var tag = (MediaItemTag) mCurrentlySelectedQueueItem?.Tag;
             if (tag?.Exception == null) return;
-            using (var dialog = CommonTaskDialogs.Exception(tag.Exception, "An error occurred while downloading this track",
+            TaskDialogHelper.ShowExceptionDialog(tag.Exception, "An error occurred while downloading this track",
                 "Check you can play this track on the web, check that you have a subscription, or try signing in and out.",
-                this))
-            {
-                dialog.Show();
-            }
+                Handle);
         }
 
         private void queueListView_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -863,9 +895,10 @@ namespace Athame.UI
             ShowDetails();
         }
 
-        private void reportAnIssueToolStripMenuItem_Click(object sender, EventArgs e)
+        private void queueMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
-
+            removeTrackToolStripMenuItem.Enabled = !isWorking;
+            removeGroupToolStripMenuItem.Enabled = !isWorking;
         }
     }
 }

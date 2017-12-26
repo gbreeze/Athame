@@ -1,13 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Athame.UI.Win32;
 
 namespace Athame.UI.Win32
 {
@@ -59,10 +53,7 @@ namespace Athame.UI.Win32
                 dwTimeout = (uint)rate
             };
             fInfo.cbSize = (uint)Marshal.SizeOf(fInfo);
-            if (!FlashWindowEx(ref fInfo))
-            {
-                throw new Win32Exception();
-            }
+            FlashWindowEx(ref fInfo);
         }
 
 

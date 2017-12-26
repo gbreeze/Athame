@@ -33,6 +33,8 @@
             this.pldSameAsAlbumTrack = new System.Windows.Forms.CheckBox();
             this.formatHelpButton = new System.Windows.Forms.Button();
             this.pldOptionsGroupBox = new System.Windows.Forms.GroupBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.savePlaylistAsComboBox = new System.Windows.Forms.ComboBox();
             this.pldAskWhereToSaveRadioButton = new System.Windows.Forms.RadioButton();
             this.pldSaveToRadioButton = new System.Windows.Forms.RadioButton();
             this.pldSaveLocLabel = new System.Windows.Forms.Label();
@@ -69,6 +71,8 @@
             this.saveButton = new System.Windows.Forms.Button();
             this.cancelButton = new System.Windows.Forms.Button();
             this.mFolderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
+            this.confirmExitCheckBox = new System.Windows.Forms.CheckBox();
+            this.ignoreAlbumArtworkCheckBox = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
             this.generalTab.SuspendLayout();
             this.pldOptionsGroupBox.SuspendLayout();
@@ -92,6 +96,7 @@
             // 
             // generalTab
             // 
+            this.generalTab.Controls.Add(this.confirmExitCheckBox);
             this.generalTab.Controls.Add(this.pldSameAsAlbumTrack);
             this.generalTab.Controls.Add(this.formatHelpButton);
             this.generalTab.Controls.Add(this.pldOptionsGroupBox);
@@ -121,7 +126,7 @@
             // 
             // formatHelpButton
             // 
-            this.formatHelpButton.Location = new System.Drawing.Point(542, 276);
+            this.formatHelpButton.Location = new System.Drawing.Point(542, 319);
             this.formatHelpButton.Name = "formatHelpButton";
             this.formatHelpButton.Size = new System.Drawing.Size(160, 23);
             this.formatHelpButton.TabIndex = 14;
@@ -131,6 +136,9 @@
             // 
             // pldOptionsGroupBox
             // 
+            this.pldOptionsGroupBox.Controls.Add(this.ignoreAlbumArtworkCheckBox);
+            this.pldOptionsGroupBox.Controls.Add(this.label3);
+            this.pldOptionsGroupBox.Controls.Add(this.savePlaylistAsComboBox);
             this.pldOptionsGroupBox.Controls.Add(this.pldAskWhereToSaveRadioButton);
             this.pldOptionsGroupBox.Controls.Add(this.pldSaveToRadioButton);
             this.pldOptionsGroupBox.Controls.Add(this.pldSaveLocLabel);
@@ -139,10 +147,33 @@
             this.pldOptionsGroupBox.Controls.Add(this.label2);
             this.pldOptionsGroupBox.Location = new System.Drawing.Point(6, 129);
             this.pldOptionsGroupBox.Name = "pldOptionsGroupBox";
-            this.pldOptionsGroupBox.Size = new System.Drawing.Size(696, 128);
+            this.pldOptionsGroupBox.Size = new System.Drawing.Size(696, 184);
             this.pldOptionsGroupBox.TabIndex = 13;
             this.pldOptionsGroupBox.TabStop = false;
             this.pldOptionsGroupBox.Text = "Playlist download options";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(6, 125);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(107, 15);
+            this.label3.TabIndex = 15;
+            this.label3.Text = "Save playlist as file:";
+            // 
+            // savePlaylistAsComboBox
+            // 
+            this.savePlaylistAsComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.savePlaylistAsComboBox.FormattingEnabled = true;
+            this.savePlaylistAsComboBox.Items.AddRange(new object[] {
+            "Don\'t save as file",
+            "M3U (M3U8)",
+            "PLS"});
+            this.savePlaylistAsComboBox.Location = new System.Drawing.Point(119, 122);
+            this.savePlaylistAsComboBox.Name = "savePlaylistAsComboBox";
+            this.savePlaylistAsComboBox.Size = new System.Drawing.Size(121, 23);
+            this.savePlaylistAsComboBox.TabIndex = 16;
+            this.savePlaylistAsComboBox.SelectedIndexChanged += new System.EventHandler(this.savePlaylistAsComboBox_SelectedIndexChanged);
             // 
             // pldAskWhereToSaveRadioButton
             // 
@@ -177,7 +208,7 @@
             this.pldSaveLocLabel.Name = "pldSaveLocLabel";
             this.pldSaveLocLabel.Size = new System.Drawing.Size(524, 23);
             this.pldSaveLocLabel.TabIndex = 7;
-            this.pldSaveLocLabel.Text = "Placeholder text";
+            this.pldSaveLocLabel.Text = "Placeholder text ***DO NOT TRANSLATE***";
             this.pldSaveLocLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pldPathFormatTextBox
@@ -258,7 +289,7 @@
             this.saveLocLabel.Name = "saveLocLabel";
             this.saveLocLabel.Size = new System.Drawing.Size(524, 23);
             this.saveLocLabel.TabIndex = 7;
-            this.saveLocLabel.Text = "Placeholder text";
+            this.saveLocLabel.Text = "Placeholder text ***DO NOT TRANSLATE**";
             this.saveLocLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pathFormatTextBox
@@ -294,7 +325,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(6, 336);
+            this.label4.Location = new System.Drawing.Point(6, 355);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(114, 15);
             this.label4.TabIndex = 2;
@@ -305,7 +336,7 @@
             this.flowLayoutPanel2.Controls.Add(this.artworkSaveAsFileRadioButton);
             this.flowLayoutPanel2.Controls.Add(this.artworkSaveAsFormattedFileRadioButton);
             this.flowLayoutPanel2.Controls.Add(this.artworkDontSaveRadioButton);
-            this.flowLayoutPanel2.Location = new System.Drawing.Point(126, 336);
+            this.flowLayoutPanel2.Location = new System.Drawing.Point(126, 355);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(200, 100);
             this.flowLayoutPanel2.TabIndex = 3;
@@ -538,11 +569,33 @@
             this.cancelButton.UseVisualStyleBackColor = true;
             this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
             // 
+            // confirmExitCheckBox
+            // 
+            this.confirmExitCheckBox.AutoSize = true;
+            this.confirmExitCheckBox.Location = new System.Drawing.Point(6, 322);
+            this.confirmExitCheckBox.Name = "confirmExitCheckBox";
+            this.confirmExitCheckBox.Size = new System.Drawing.Size(280, 19);
+            this.confirmExitCheckBox.TabIndex = 2;
+            this.confirmExitCheckBox.Text = "Ask before exiting if there are items in the queue";
+            this.confirmExitCheckBox.UseVisualStyleBackColor = true;
+            this.confirmExitCheckBox.CheckedChanged += new System.EventHandler(this.confirmExitCheckBox_CheckedChanged);
+            // 
+            // ignoreAlbumArtworkCheckBox
+            // 
+            this.ignoreAlbumArtworkCheckBox.AutoSize = true;
+            this.ignoreAlbumArtworkCheckBox.Location = new System.Drawing.Point(9, 152);
+            this.ignoreAlbumArtworkCheckBox.Name = "ignoreAlbumArtworkCheckBox";
+            this.ignoreAlbumArtworkCheckBox.Size = new System.Drawing.Size(315, 19);
+            this.ignoreAlbumArtworkCheckBox.TabIndex = 15;
+            this.ignoreAlbumArtworkCheckBox.Text = "Don\'t save album artwork when downloading a playlist";
+            this.ignoreAlbumArtworkCheckBox.UseVisualStyleBackColor = true;
+            this.ignoreAlbumArtworkCheckBox.CheckedChanged += new System.EventHandler(this.ignoreAlbumArtworkCheckBox_CheckedChanged);
+            // 
             // SettingsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(744, 583);
+            this.ClientSize = new System.Drawing.Size(744, 581);
             this.Controls.Add(this.flowLayoutPanel1);
             this.Controls.Add(this.tabControl1);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -615,5 +668,9 @@
         private System.Windows.Forms.Label serviceDescriptionLabel;
         private System.Windows.Forms.Label serviceNameLabel;
         private System.Windows.Forms.LinkLabel serviceWebsiteLabel;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.ComboBox savePlaylistAsComboBox;
+        private System.Windows.Forms.CheckBox confirmExitCheckBox;
+        private System.Windows.Forms.CheckBox ignoreAlbumArtworkCheckBox;
     }
 }

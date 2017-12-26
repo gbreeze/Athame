@@ -41,6 +41,7 @@ namespace Athame.UI
             this.titleCol = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.artistCol = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.albumCol = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.locCol = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.queueImageList = new System.Windows.Forms.ImageList(this.components);
             this.groupBox2 = new System.Windows.Forms.GroupBox();
@@ -63,7 +64,6 @@ namespace Athame.UI
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.queueImageAnimationTimer = new System.Windows.Forms.Timer(this.components);
-            this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.groupBox2.SuspendLayout();
             this.queueMenu.SuspendLayout();
             this.mMenu.SuspendLayout();
@@ -71,40 +71,25 @@ namespace Athame.UI
             // 
             // idTextBox
             // 
-            this.idTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.idTextBox.Location = new System.Drawing.Point(56, 59);
+            resources.ApplyResources(this.idTextBox, "idTextBox");
             this.idTextBox.Name = "idTextBox";
-            this.idTextBox.Size = new System.Drawing.Size(642, 23);
-            this.idTextBox.TabIndex = 2;
             this.idTextBox.TextChanged += new System.EventHandler(this.idTextBox_TextChanged);
             // 
             // label1
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(14, 62);
+            resources.ApplyResources(this.label1, "label1");
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(31, 15);
-            this.label1.TabIndex = 3;
-            this.label1.Text = "URL:";
             // 
             // dlButton
             // 
-            this.dlButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.dlButton.Enabled = false;
-            this.dlButton.Location = new System.Drawing.Point(708, 59);
+            resources.ApplyResources(this.dlButton, "dlButton");
             this.dlButton.Name = "dlButton";
-            this.dlButton.Size = new System.Drawing.Size(87, 23);
-            this.dlButton.TabIndex = 4;
-            this.dlButton.Text = "Add";
             this.dlButton.UseVisualStyleBackColor = true;
             this.dlButton.Click += new System.EventHandler(this.button1_Click);
             // 
             // queueListView
             // 
-            this.queueListView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            resources.ApplyResources(this.queueListView, "queueListView");
             this.queueListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.statusCol,
             this.trackNumberCol,
@@ -114,11 +99,8 @@ namespace Athame.UI
             this.columnHeader1,
             this.locCol});
             this.queueListView.FullRowSelect = true;
-            this.queueListView.Location = new System.Drawing.Point(14, 309);
             this.queueListView.Name = "queueListView";
-            this.queueListView.Size = new System.Drawing.Size(783, 499);
             this.queueListView.SmallImageList = this.queueImageList;
-            this.queueListView.TabIndex = 7;
             this.queueListView.UseCompatibleStateImageBehavior = false;
             this.queueListView.View = System.Windows.Forms.View.Details;
             this.queueListView.SelectedIndexChanged += new System.EventHandler(this.queueListView_SelectedIndexChanged);
@@ -129,33 +111,31 @@ namespace Athame.UI
             // 
             // statusCol
             // 
-            this.statusCol.Text = "Status";
-            this.statusCol.Width = 145;
+            resources.ApplyResources(this.statusCol, "statusCol");
             // 
             // trackNumberCol
             // 
-            this.trackNumberCol.Text = "Disc / Track";
-            this.trackNumberCol.Width = 80;
+            resources.ApplyResources(this.trackNumberCol, "trackNumberCol");
             // 
             // titleCol
             // 
-            this.titleCol.Text = "Title";
-            this.titleCol.Width = 176;
+            resources.ApplyResources(this.titleCol, "titleCol");
             // 
             // artistCol
             // 
-            this.artistCol.Text = "Artist";
-            this.artistCol.Width = 181;
+            resources.ApplyResources(this.artistCol, "artistCol");
             // 
             // albumCol
             // 
-            this.albumCol.Text = "Album";
-            this.albumCol.Width = 152;
+            resources.ApplyResources(this.albumCol, "albumCol");
+            // 
+            // columnHeader1
+            // 
+            resources.ApplyResources(this.columnHeader1, "columnHeader1");
             // 
             // locCol
             // 
-            this.locCol.Text = "Download location";
-            this.locCol.Width = 200;
+            resources.ApplyResources(this.locCol, "locCol");
             // 
             // queueImageList
             // 
@@ -181,67 +161,41 @@ namespace Athame.UI
             // 
             // groupBox2
             // 
-            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            resources.ApplyResources(this.groupBox2, "groupBox2");
             this.groupBox2.Controls.Add(this.collectionProgressBar);
             this.groupBox2.Controls.Add(this.collectionStatusLabel);
             this.groupBox2.Controls.Add(this.totalStatusLabel);
             this.groupBox2.Controls.Add(this.totalProgressBar);
-            this.groupBox2.Location = new System.Drawing.Point(14, 127);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(779, 147);
-            this.groupBox2.TabIndex = 0;
             this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Status";
             // 
             // collectionProgressBar
             // 
-            this.collectionProgressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.collectionProgressBar.Location = new System.Drawing.Point(6, 106);
+            resources.ApplyResources(this.collectionProgressBar, "collectionProgressBar");
             this.collectionProgressBar.Name = "collectionProgressBar";
-            this.collectionProgressBar.Size = new System.Drawing.Size(767, 16);
-            this.collectionProgressBar.TabIndex = 3;
             // 
             // collectionStatusLabel
             // 
-            this.collectionStatusLabel.AutoSize = true;
-            this.collectionStatusLabel.Location = new System.Drawing.Point(7, 87);
+            resources.ApplyResources(this.collectionStatusLabel, "collectionStatusLabel");
             this.collectionStatusLabel.Name = "collectionStatusLabel";
-            this.collectionStatusLabel.Size = new System.Drawing.Size(89, 15);
-            this.collectionStatusLabel.TabIndex = 1;
-            this.collectionStatusLabel.Text = "Ready to begin.";
             this.collectionStatusLabel.UseMnemonic = false;
             // 
             // totalStatusLabel
             // 
-            this.totalStatusLabel.AutoSize = true;
-            this.totalStatusLabel.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.totalStatusLabel.Location = new System.Drawing.Point(7, 31);
+            resources.ApplyResources(this.totalStatusLabel, "totalStatusLabel");
             this.totalStatusLabel.Name = "totalStatusLabel";
-            this.totalStatusLabel.Size = new System.Drawing.Size(45, 17);
-            this.totalStatusLabel.TabIndex = 2;
-            this.totalStatusLabel.Text = "Ready";
             this.totalStatusLabel.UseMnemonic = false;
             // 
             // totalProgressBar
             // 
-            this.totalProgressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.totalProgressBar.Location = new System.Drawing.Point(6, 52);
+            resources.ApplyResources(this.totalProgressBar, "totalProgressBar");
             this.totalProgressBar.Name = "totalProgressBar";
-            this.totalProgressBar.Size = new System.Drawing.Size(767, 16);
-            this.totalProgressBar.TabIndex = 0;
             // 
             // settingsButton
             // 
             this.settingsButton.Image = global::Athame.Properties.Resources.menu_arrow;
-            this.settingsButton.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.settingsButton.Location = new System.Drawing.Point(14, 14);
+            resources.ApplyResources(this.settingsButton, "settingsButton");
             this.settingsButton.Name = "settingsButton";
-            this.settingsButton.Size = new System.Drawing.Size(87, 23);
-            this.settingsButton.TabIndex = 7;
-            this.settingsButton.Text = "Menu";
             this.settingsButton.UseVisualStyleBackColor = true;
             this.settingsButton.Click += new System.EventHandler(this.settingsButton_Click);
             // 
@@ -253,81 +207,57 @@ namespace Athame.UI
             this.toolStripSeparator2,
             this.showCollectionInFileBrowserToolStripMenuItem});
             this.queueMenu.Name = "queueMenu";
-            this.queueMenu.Size = new System.Drawing.Size(236, 76);
+            resources.ApplyResources(this.queueMenu, "queueMenu");
+            this.queueMenu.Opening += new System.ComponentModel.CancelEventHandler(this.queueMenu_Opening);
             // 
             // removeTrackToolStripMenuItem
             // 
             this.removeTrackToolStripMenuItem.Name = "removeTrackToolStripMenuItem";
-            this.removeTrackToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.Delete;
-            this.removeTrackToolStripMenuItem.Size = new System.Drawing.Size(235, 22);
-            this.removeTrackToolStripMenuItem.Text = "Remove track";
+            resources.ApplyResources(this.removeTrackToolStripMenuItem, "removeTrackToolStripMenuItem");
             this.removeTrackToolStripMenuItem.Click += new System.EventHandler(this.removeTrackToolStripMenuItem_Click);
             // 
             // removeGroupToolStripMenuItem
             // 
             this.removeGroupToolStripMenuItem.Name = "removeGroupToolStripMenuItem";
-            this.removeGroupToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Shift | System.Windows.Forms.Keys.Delete)));
-            this.removeGroupToolStripMenuItem.Size = new System.Drawing.Size(235, 22);
-            this.removeGroupToolStripMenuItem.Text = "Remove collection";
+            resources.ApplyResources(this.removeGroupToolStripMenuItem, "removeGroupToolStripMenuItem");
             this.removeGroupToolStripMenuItem.Click += new System.EventHandler(this.removeGroupToolStripMenuItem_Click);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(232, 6);
+            resources.ApplyResources(this.toolStripSeparator2, "toolStripSeparator2");
             // 
             // showCollectionInFileBrowserToolStripMenuItem
             // 
-            this.showCollectionInFileBrowserToolStripMenuItem.Enabled = false;
+            resources.ApplyResources(this.showCollectionInFileBrowserToolStripMenuItem, "showCollectionInFileBrowserToolStripMenuItem");
             this.showCollectionInFileBrowserToolStripMenuItem.Name = "showCollectionInFileBrowserToolStripMenuItem";
-            this.showCollectionInFileBrowserToolStripMenuItem.Size = new System.Drawing.Size(235, 22);
-            this.showCollectionInFileBrowserToolStripMenuItem.Text = "Show collection in file browser";
             this.showCollectionInFileBrowserToolStripMenuItem.Click += new System.EventHandler(this.showCollectionInFileBrowserToolStripMenuItem_Click);
             // 
             // clearButton
             // 
-            this.clearButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.clearButton.AutoSize = true;
-            this.clearButton.Location = new System.Drawing.Point(660, 88);
+            resources.ApplyResources(this.clearButton, "clearButton");
             this.clearButton.Name = "clearButton";
-            this.clearButton.Size = new System.Drawing.Size(34, 15);
-            this.clearButton.TabIndex = 9;
             this.clearButton.TabStop = true;
-            this.clearButton.Text = "Clear";
             this.clearButton.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.clearButton_LinkClicked);
             // 
             // pasteButton
             // 
-            this.pasteButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.pasteButton.AutoSize = true;
-            this.pasteButton.Location = new System.Drawing.Point(614, 88);
+            resources.ApplyResources(this.pasteButton, "pasteButton");
             this.pasteButton.Name = "pasteButton";
-            this.pasteButton.Size = new System.Drawing.Size(35, 15);
-            this.pasteButton.TabIndex = 10;
             this.pasteButton.TabStop = true;
-            this.pasteButton.Text = "Paste";
             this.pasteButton.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.pasteButton_LinkClicked);
             // 
             // urlValidStateLabel
             // 
             this.urlValidStateLabel.Image = global::Athame.Properties.Resources.error;
-            this.urlValidStateLabel.ImageAlign = System.Drawing.ContentAlignment.TopLeft;
-            this.urlValidStateLabel.Location = new System.Drawing.Point(52, 88);
+            resources.ApplyResources(this.urlValidStateLabel, "urlValidStateLabel");
             this.urlValidStateLabel.Name = "urlValidStateLabel";
-            this.urlValidStateLabel.Padding = new System.Windows.Forms.Padding(23, 5, 0, 0);
-            this.urlValidStateLabel.Size = new System.Drawing.Size(554, 36);
-            this.urlValidStateLabel.TabIndex = 11;
-            this.urlValidStateLabel.Visible = false;
             this.urlValidStateLabel.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.urlValidStateLabel_LinkClicked);
             // 
             // startDownloadButton
             // 
-            this.startDownloadButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.startDownloadButton.Location = new System.Drawing.Point(720, 280);
+            resources.ApplyResources(this.startDownloadButton, "startDownloadButton");
             this.startDownloadButton.Name = "startDownloadButton";
-            this.startDownloadButton.Size = new System.Drawing.Size(75, 23);
-            this.startDownloadButton.TabIndex = 12;
-            this.startDownloadButton.Text = "Start";
             this.startDownloadButton.UseVisualStyleBackColor = true;
             this.startDownloadButton.Click += new System.EventHandler(this.startDownloadButton_Click);
             // 
@@ -338,41 +268,34 @@ namespace Athame.UI
             this.toolStripSeparator1,
             this.aboutToolStripMenuItem});
             this.mMenu.Name = "mMenu";
-            this.mMenu.Size = new System.Drawing.Size(126, 54);
+            resources.ApplyResources(this.mMenu, "mMenu");
             // 
             // settingsToolStripMenuItem
             // 
             this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
-            this.settingsToolStripMenuItem.Size = new System.Drawing.Size(125, 22);
-            this.settingsToolStripMenuItem.Text = "Settings...";
+            resources.ApplyResources(this.settingsToolStripMenuItem, "settingsToolStripMenuItem");
             this.settingsToolStripMenuItem.Click += new System.EventHandler(this.settingsToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(122, 6);
+            resources.ApplyResources(this.toolStripSeparator1, "toolStripSeparator1");
             // 
             // aboutToolStripMenuItem
             // 
             this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(125, 22);
-            this.aboutToolStripMenuItem.Text = "About...";
+            resources.ApplyResources(this.aboutToolStripMenuItem, "aboutToolStripMenuItem");
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
             // queueImageAnimationTimer
             // 
             this.queueImageAnimationTimer.Tick += new System.EventHandler(this.queueImageAnimationTimer_Tick);
             // 
-            // columnHeader1
-            // 
-            this.columnHeader1.Text = "Flags";
-            // 
             // MainForm
             // 
             this.AcceptButton = this.dlButton;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(807, 820);
             this.Controls.Add(this.queueListView);
             this.Controls.Add(this.startDownloadButton);
             this.Controls.Add(this.urlValidStateLabel);
@@ -383,12 +306,8 @@ namespace Athame.UI
             this.Controls.Add(this.dlButton);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.idTextBox);
-            this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Icon = global::Athame.Properties.Resources.AthameIcon;
-            this.MinimumSize = new System.Drawing.Size(823, 858);
             this.Name = "MainForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
-            this.Text = "Athame";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.Shown += new System.EventHandler(this.MainForm_Shown);

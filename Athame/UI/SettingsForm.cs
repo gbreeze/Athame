@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
 using Athame.Plugin;
 using Athame.PluginAPI.Service;
-using Athame.Properties;
 using Athame.Settings;
 
 namespace Athame.UI
@@ -24,6 +22,9 @@ namespace Athame.UI
             askWhereToSaveRadioButton.Checked = defaults.GeneralSavePreference.AskForLocation;
             saveLocLabel.Text = defaults.GeneralSavePreference.SaveDirectory;
             pathFormatTextBox.Text = defaults.GeneralSavePreference.SaveFormat;
+            savePlaylistAsComboBox.SelectedIndex = (int)defaults.SavePlaylist;
+            confirmExitCheckBox.Checked = defaults.ConfirmExit;
+            ignoreAlbumArtworkCheckBox.Checked = defaults.IgnoreSaveArtworkWithPlaylist;
 
             // Inherit checkbox
             pldSameAsAlbumTrack.Checked = defaults.PlaylistSavePreferenceUsesGeneral;
@@ -54,7 +55,10 @@ namespace Athame.UI
             services = Program.DefaultPluginManager.Plugins;
             foreach (var service in services)
             {
-                servicesListBox.Items.Add(service.Info.Name);
+                if (service.Info != null)
+                {
+                    servicesListBox.Items.Add(service.Info.Name);
+                }
             }
             if (servicesListBox.Items.Count > 0) servicesListBox.SelectedIndex = 0;
         }
@@ -188,6 +192,21 @@ namespace Athame.UI
         {
             if (selectedService == null) return;
             Process.Start("\"" + selectedService.Info.Website.ToString() + "\"");
+        }
+
+        private void savePlaylistAsComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            defaults.SavePlaylist = (SavePlaylistSetting)savePlaylistAsComboBox.SelectedIndex;
+        }
+
+        private void confirmExitCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            defaults.ConfirmExit = confirmExitCheckBox.Checked;
+        }
+
+        private void ignoreAlbumArtworkCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            defaults.IgnoreSaveArtworkWithPlaylist = confirmExitCheckBox.Checked;
         }
     }
 }

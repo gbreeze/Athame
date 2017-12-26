@@ -1,47 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using Athame.PluginAPI.Downloader;
 using Athame.PluginAPI.Service;
+using CenterCLR;
 
 namespace Athame.Utils
 {
     public static class TrackFileExtensions
     {
-        /// <summary>
-        /// Gets the path for the track file, which includes the extension.
-        /// </summary>
-        /// <param name="trackFile">The track file.</param>
-        /// <param name="pathFormat">The path format.</param>
-        /// <returns>A formatted path.</returns>
-        public static string GetPath(this TrackFile trackFile, string pathFormat)
+        public static string GetPath(this TrackFile trackFile, string pathFormat, IMediaCollection collection)
         {
-            return GetPath(trackFile, pathFormat, new StringObjectFormatter());
-        }
-
-        /// <summary>
-        /// Gets the path for a track, without the extension.
-        /// </summary>
-        /// <param name="track">The track.</param>
-        /// <param name="pathFormat">The path format.</param>
-        /// <returns>A formatted path without an extension.</returns>
-        public static string GetBasicPath(this Track track, string pathFormat)
-        {
-            return GetBasicPath(track, pathFormat, new StringObjectFormatter());
-        }
-
-        public static string GetPath(this TrackFile trackFile, string pathFormat, StringObjectFormatter formatter)
-        {
-            var cleanedFilePath = trackFile.Track.GetBasicPath(pathFormat, formatter);
+            var cleanedFilePath = trackFile.Track.GetBasicPath(pathFormat, collection);
             return trackFile.FileType.Append(cleanedFilePath);
         }
 
-        public static string GetBasicPath(this Track track, string pathFormat, StringObjectFormatter formatter)
+        public static string GetBasicPath(this Track track, string pathFormat, IMediaCollection collection)
         {
-            return formatter.FormatInstance(pathFormat, track,
-                o => o != null ? PathHelpers.CleanFilename(o.ToString()) : "");
+            // Hacky method to clean the file path
+            var formatStrComponents = pathFormat.Split(Path.DirectorySeparatorChar);
+            var newFormat = String.Join("\0", formatStrComponents);
+            var vars = Dictify.ObjectToDictionary(track);
+            vars["PlaylistName"] = collection.Title;
+            vars["CollectionName"] = collection.Title;
+            vars["ServiceName"] = collection.Title;
+            var finalPath = PathHelpers.CleanPath(Named.Format(newFormat, vars));
+            return finalPath;
         }
     }
 }

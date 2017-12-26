@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Athame.PluginAPI;
 using Athame.PluginAPI.Service;
-using System.IO.Compression;
 using System.Text.RegularExpressions;
 using Athame.Logging;
 using Athame.Settings;
@@ -18,13 +14,24 @@ namespace Athame.Plugin
 
     public class PluginManager
     {
-        public const string Tag = nameof(PluginManager);
+        private const string Tag = nameof(PluginManager);
 
         public const string PluginDir = "Plugins";
         public const string PluginDllPrefix = "AthamePlugin.";
         public const string SettingsDir = "Plugin Data";
         public const string SettingsFileFormat = "{0} Settings.json";
-        public const int ApiVersion = 2;
+
+        public const int ApiVersion = 3;
+
+        private static readonly AssemblyName PluginApiAssemblyName;
+
+        static PluginManager()
+        {
+            PluginApiAssemblyName = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
+                let name = assembly.GetName()
+                where name.Name == "Athame.PluginAPI"
+                select name).FirstOrDefault();
+        }
 
         public string PluginDirectory { get; }
 
@@ -60,11 +67,11 @@ namespace Athame.Plugin
 
         public List<PluginInstance> Plugins { get; private set; }
 
+        public bool AreAnyLoaded { get; set; }
+
         public event EventHandler<PluginLoadExceptionEventArgs> LoadException;
 
         private Assembly[] loadedAssemblies;
-        private bool isLoading;
-        private string singlePluginFilename;
 
         private bool IsAlreadyLoaded(AssemblyName assemblyName)
         {
@@ -80,6 +87,22 @@ namespace Athame.Plugin
         {
             Log.Debug(Tag, $"Attempting to load {instance.Name}");
             if (IsAlreadyLoaded(instance.Assembly.GetName())) return;
+            // Check that it references some form of the Plugin API assembly
+            AssemblyName pluginApiName;
+            if (
+            (pluginApiName =
+                instance.Assembly.GetReferencedAssemblies()
+                    .FirstOrDefault(name => name.Name == PluginApiAssemblyName.Name)) != null)
+            {
+                if (pluginApiName.FullName != PluginApiAssemblyName.FullName)
+                {
+                    throw new PluginIncompatibleException($"Wrong version of Athame.PluginAPI referenced: expected {PluginApiAssemblyName}, found {pluginApiName}");
+                }
+            }
+            else
+            {
+                throw new PluginLoadException("Plugin does not reference Athame.PluginAPI.", instance.AssemblyDirectory);
+            }
 
             var types = instance.Assembly.GetExportedTypes();
             // Only filter for types which can be instantiated and implement IPlugin somehow.
@@ -97,8 +120,7 @@ namespace Athame.Plugin
             var plugin = (IPlugin)Activator.CreateInstance(implementingType);
             if (plugin.ApiVersion != ApiVersion)
             {
-                throw new PluginLoadException($"Plugin declares incompatible API version: expected {ApiVersion}, found {plugin.ApiVersion}.",
-                    instance.AssemblyDirectory);
+                throw new PluginIncompatibleException($"Plugin declares incompatible API version: expected {ApiVersion}, found {plugin.ApiVersion}.");
             }
             instance.Info = plugin.Info;
             instance.Plugin = plugin;
@@ -136,18 +158,12 @@ namespace Athame.Plugin
             loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
         }
 
-        public void SetSinglePlugin(string filePath)
-        {
-            singlePluginFilename = filePath;
-        }
-
         public void LoadAll()
         {
             BeforeLoad();
 
             // Plugins are stored in format {PluginDir}/{PluginName}/AthamePlugin.*.dll
             var subDirs = Directory.GetDirectories(PluginDirectory);
-            isLoading = true;
             foreach (var dir in subDirs)
             {
                 var name = Path.GetFileName(dir);
@@ -172,6 +188,7 @@ namespace Athame.Plugin
                     Plugins.Add(plugin);
 
                     Activate(plugin);
+                    AreAnyLoaded = true;
                 }
                 catch (Exception ex)
                 {
@@ -182,7 +199,6 @@ namespace Athame.Plugin
                 }
 
             }
-            isLoading = false;
         }
 
         public void InitAll()

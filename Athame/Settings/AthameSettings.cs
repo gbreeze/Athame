@@ -1,13 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Athame.PluginAPI.Service;
-using Newtonsoft.Json;
 
 namespace Athame.Settings
 {
@@ -16,6 +10,13 @@ namespace Athame.Settings
         DontSave,
         AsCover,
         AsArtistAlbum
+    }
+
+    public enum SavePlaylistSetting
+    {
+        DontSave,
+        M3U,
+        PLS
     }
 
     public class MediaTypeSavePreference
@@ -72,12 +73,15 @@ namespace Athame.Settings
             };
             PlaylistSavePreference = new MediaTypeSavePreference
             {
-                AskForLocation = true,
+                AskForLocation = false,
                 SaveDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                SaveFormat = "{AlbumArtistOrArtist} - {Title}"
+                SaveFormat = "{PlaylistName}/{Title} - {AlbumArtistOrArtist}"
             };
             PlaylistSavePreferenceUsesGeneral = false;
             MainWindowPreference = new WindowPreference();
+            SavePlaylist = SavePlaylistSetting.DontSave;
+            ConfirmExit = true;
+            IgnoreSaveArtworkWithPlaylist = true;
         }
 
         public AlbumArtworkSaveFormat AlbumArtworkSaveFormat { get; set; }
@@ -85,5 +89,9 @@ namespace Athame.Settings
         public MediaTypeSavePreference PlaylistSavePreference { get; set; }
         public bool PlaylistSavePreferenceUsesGeneral { get; set; }
         public WindowPreference MainWindowPreference { get; set; }
+        public SavePlaylistSetting SavePlaylist { get; set; }
+
+        public bool ConfirmExit { get; set; }
+        public bool IgnoreSaveArtworkWithPlaylist { get; set; }
     }
 }

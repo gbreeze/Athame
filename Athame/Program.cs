@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Windows.Forms;
 using Athame.Logging;
 using Athame.Plugin;
@@ -29,6 +27,7 @@ namespace Athame
         [STAThread]
         public static void Main(string[] args)
         {
+            TaskDialogHelper.MainCaption = "Athame";
             // Create app instance config
             DefaultApp = new AthameApplication
             {
@@ -67,13 +66,6 @@ namespace Athame
 
             // Create plugin manager instance
             DefaultPluginManager = new PluginManager(Path.Combine(Directory.GetCurrentDirectory(), PluginManager.PluginDir));
-            if (args.Length >= 2)
-            {
-                if (args[0] == "/loadSinglePlugin")
-                {
-                    DefaultPluginManager.SetSinglePlugin(args[1]);
-                }
-            }
             
             Log.Debug(Tag, "Ready to begin main form loop");
             // Begin main form

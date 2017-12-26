@@ -3,6 +3,7 @@ using System.IO;
 using Athame.PluginAPI.Downloader;
 using Athame.PluginAPI.Service;
 using Athame.Settings;
+using Athame.Utils;
 using TagLib;
 using File = TagLib.File;
 using SysFile = System.IO.File;
@@ -25,6 +26,10 @@ namespace Athame.DownloadAndTag
                     break;
                 case AlbumArtworkSaveFormat.AsArtistAlbum:
                     fileName = albumArtwork?.Picture.FileType.Append($"{track.Artist} - {track.Album.Title}");
+                    if (fileName != null)
+                    {
+                        fileName = PathHelpers.CleanFilename(fileName);
+                    }
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -54,7 +59,10 @@ namespace Athame.DownloadAndTag
                 {
                     file.Tag.AlbumArtists = new[] { track.Album.Artist.Name };
                 }
-                file.Tag.Genres = new[] { track.Genre };
+                if (track.Genre != null)
+                {
+                    file.Tag.Genres = new[] {track.Genre};
+                }
                 file.Tag.Album = track.Album.Title;
                 file.Tag.Track = (uint)track.TrackNumber;
                 file.Tag.TrackCount = (uint)(track.Album.GetNumberOfTracksOnDisc(track.DiscNumber) ?? 0);
