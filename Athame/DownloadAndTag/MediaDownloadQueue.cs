@@ -149,7 +149,7 @@ namespace Athame.DownloadAndTag
                     PercentCompleted = 0M,
                     State = DownloadState.PreProcess,
                     TotalItems = tracksCollectionLength,
-                    
+
                     TrackFile = null
                 };
                 var currentItem = tracksQueue.Dequeue();
@@ -200,6 +200,18 @@ namespace Athame.DownloadAndTag
                     var path = collection.GetPath(eventArgs.TrackFile);
                     var tempPath = path;
                     if (useTempFile) tempPath += "-temp";
+
+                    // Truncate to long paths
+                    var randomName = currentItem.TrackNumber + " - " + Guid.NewGuid().ToString().Substring(0, 8);
+                    if (tempPath.Length > 255)
+                    {
+                        tempPath = Path.Combine(Path.GetDirectoryName(tempPath), randomName + Path.GetExtension(tempPath));
+                    }
+                    if (path.Length > 255)
+                    {
+                        path = Path.Combine(Path.GetDirectoryName(path), randomName + Path.GetExtension(path));
+                    }
+
                     EnsureParentDirectories(tempPath);
                     eventArgs.State = DownloadState.Downloading;
 
@@ -231,8 +243,6 @@ namespace Athame.DownloadAndTag
                         }
                         File.Move(tempPath, path);
                     }
-
-
                 }
                 catch (Exception ex)
                 {
@@ -255,8 +265,6 @@ namespace Athame.DownloadAndTag
 
                 // Raise the completed event even if an error occurred
                 OnTrackDownloadCompleted(eventArgs);
-
-                
             }
 
             // Write playlist if possible
