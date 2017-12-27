@@ -202,14 +202,17 @@ namespace Athame.DownloadAndTag
                     if (useTempFile) tempPath += "-temp";
 
                     // Truncate to long paths
+                    // https://stackoverflow.com/questions/22781021/why-path-getdirectoryname-function-has-to-be-dependent-on-260-chars-limit
+                    // Path.GetDirectoryName throws and path to long error here - we have to do a substring
+                    var directory = path.Substring(0, path.LastIndexOf('\\'));
                     var randomName = currentItem.TrackNumber + " - " + Guid.NewGuid().ToString().Substring(0, 8);
                     if (tempPath.Length > 255)
                     {
-                        tempPath = Path.Combine(Path.GetDirectoryName(tempPath), randomName + Path.GetExtension(tempPath));
+                        tempPath = Path.Combine(directory, randomName + Path.GetExtension(tempPath));
                     }
                     if (path.Length > 255)
                     {
-                        path = Path.Combine(Path.GetDirectoryName(path), randomName + Path.GetExtension(path));
+                        path = Path.Combine(directory, randomName + Path.GetExtension(path));
                     }
 
                     EnsureParentDirectories(tempPath);
