@@ -203,7 +203,8 @@ namespace Athame.DownloadAndTag
 
                     // Truncate to long paths
                     // https://stackoverflow.com/questions/22781021/why-path-getdirectoryname-function-has-to-be-dependent-on-260-chars-limit
-                    // Path.GetDirectoryName throws and path to long error here - we have to do a substring
+                    // Path.GetDirectoryName throws and path-to-long error here - we have to do a substring
+                    // This will change in .net 4.6.2
                     var directory = path.Substring(0, path.LastIndexOf('\\'));
                     var randomName = currentItem.TrackNumber + " - " + Guid.NewGuid().ToString().Substring(0, 8);
                     if (tempPath.Length > 255)
